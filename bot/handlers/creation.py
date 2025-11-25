@@ -11,14 +11,12 @@ from aiogram.exceptions import TelegramBadRequest
 
 # Импортируем свои модули
 from database.db import db
+
 from keyboards.inline import (
-    get_room_keyboard,
-    get_style_keyboard,
-    get_payment_keyboard,
-    get_post_generation_keyboard,
+    get_main_menu_keyboard,
     get_profile_keyboard,
-    get_main_menu_keyboard
 )
+
 from services.replicate_api import generate_image
 from states.fsm import CreationStates
 from utils.texts import (

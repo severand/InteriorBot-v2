@@ -1,9 +1,9 @@
 # https://www.perplexity.ai/search/izuchi-moi-kod-na-git-khab-i-p-iLN8v2F.Rkqx2s4l9WxSOw#102
 
 
-import os
 import logging
-from aiogram import Bot
+import os
+
 from config import config
 
 logger = logging.getLogger(__name__)

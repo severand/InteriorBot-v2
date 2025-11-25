@@ -1,4 +1,4 @@
- # --- Новый код: keyboards/reply.py ----
+# --- Новый код: keyboards/reply.py ----
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 # --- Ключи для заголовков (уникальные, без эмодзи, с разделителями) ---

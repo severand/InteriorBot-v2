@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-# config
-=======
->>>>>>> origin/main
 import os
 from dotenv import load_dotenv
 

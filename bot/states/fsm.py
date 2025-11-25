@@ -1,4 +1,3 @@
-#
 from aiogram.fsm.state import StatesGroup, State
 
 # Класс состояний для процесса генерации дизайна

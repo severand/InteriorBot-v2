@@ -1,4 +1,4 @@
- # --- Новый файл: bot/utils/helpers.py ---
+# --- Новый файл: bot/utils/helpers.py ---
 import asyncio
 import logging
 

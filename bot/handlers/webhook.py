@@ -1,4 +1,4 @@
-#  webhook
+# webhook
 
 from aiogram import Router, Request
 from aiogram.types import Update

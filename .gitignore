@@ -1,45 +1,28 @@
-# Секретные данные
-.env
-*.env
-file.env
-
-# База данных
+# Уже есть (оставляем как есть)
 *.db
-*.db-journal
-bot.db
-
-# Виртуальное окружение
+.env
+__pycache__/
 venv/
-env/
-Scripts/
+
+# ДОБАВЬТЕ ЭТО (скопируйте и вставьте):
+
+# Virtual Environment folders
 Lib/
+Scripts/
 Include/
 pyvenv.cfg
-*.bat
-*.ps1
-activate
-deactivate.bat
 
-# Python cache
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-
-# IDE
+# PyCharm settings
 .idea/
-.vscode/
-*.swp
-*.swo
 
-# Временные файлы
-*.log
+# Python compiled files
+*.pyc
+*.pyo
+*.py[cod]
+
+# OS files
 .DS_Store
 Thumbs.db
 
-# Тестовые изображения
-*.jpg
-*.jpeg
-*.png
-test_images/
-output_*/
+# Logs
+*.log

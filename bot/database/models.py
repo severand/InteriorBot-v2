@@ -1,4 +1,4 @@
-#  models
+# models
 """SQL queries for database initialization"""
 
 CREATE_USERS_TABLE = """

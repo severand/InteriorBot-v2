@@ -1,0 +1,45 @@
+# Секретные данные
+.env
+*.env
+file.env
+
+# База данных
+*.db
+*.db-journal
+bot.db
+
+# Виртуальное окружение
+venv/
+env/
+Scripts/
+Lib/
+Include/
+pyvenv.cfg
+*.bat
+*.ps1
+activate
+deactivate.bat
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Временные файлы
+*.log
+.DS_Store
+Thumbs.db
+
+# Тестовые изображения
+*.jpg
+*.jpeg
+*.png
+test_images/
+output_*/

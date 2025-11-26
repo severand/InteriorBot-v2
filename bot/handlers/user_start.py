@@ -1,5 +1,5 @@
 # handlers/user_start.py
-# С ОТЛАДКОЙ И ИСПРАВЛЕНИЕМ
+# С ОТЛАДКОЙ И НОВОЙ ЛОГИКОЙ ВЫБОРА РЕЖИМА
 
 import logging
 from aiogram import Router, F
@@ -13,6 +13,7 @@ from keyboards.inline import (
     get_profile_keyboard,
     get_home_rooms_keyboard,
     get_business_rooms_keyboard,
+    get_design_mode_keyboard,  # ← НОВАЯ КЛАВИАТУРА
 )
 from utils.texts import (
     START_TEXT,
@@ -20,9 +21,10 @@ from utils.texts import (
     PROFILE_TEXT,
     HOME_TEXT,
     BUSINESS_TEXT,
+    DESIGN_MODE_TEXT,  # ← НОВЫЙ ТЕКСТ
 )
 from utils.navigation import edit_menu
-from states.fsm import MainMenuStates, CreationStates  # ← ДОБАВЛЕН CreationStates
+from states.fsm import MainMenuStates, CreationStates
 from utils.debug import (
     debug_handler,
     log_state,
@@ -104,7 +106,6 @@ async def go_to_main_menu(callback: CallbackQuery, state: FSMContext):
 async def home_menu(callback: CallbackQuery, state: FSMContext):
     """Меню "Для дома" """
     logger.info(f"[HOME_MENU] 🎯 Callback: {callback.data}")
-    logger.info(f"✅ HANDLER home_menu ВЫЗВАН! Callback: {callback.data}")
 
     log_user_choice(callback.from_user.id, "Меню", "Для дома")
 
@@ -153,12 +154,14 @@ async def business_menu(callback: CallbackQuery, state: FSMContext):
     await log_state(state, "STATE В МЕНЮ БИЗНЕСА")
 
 
-# ===== ВЫБОР КОМНАТЫ (ДЛЯ ДОМА И БИЗНЕСА) =====
-# ✅ ЭТО НОВЫЙ ОБРАБОТЧИК - ГЛАВНОЕ ИСПРАВЛЕНИЕ!
+# ===== ВЫБОР КОМНАТЫ → ЭКРАН ВЫБОРА РЕЖИМА =====
 @router.callback_query(F.data.startswith("room_"))
 @debug_handler
 async def room_selected(callback: CallbackQuery, state: FSMContext):
-    """Обработка выбора комнаты"""
+    """
+    Обработка выбора комнаты.
+    НОВАЯ ЛОГИКА: После выбора комнаты показываем ЭКРАН ВЫБОРА РЕЖИМА
+    """
     logger.info(f"[ROOM_SELECTED] 🎯 Callback: {callback.data}")
 
     # Извлекаем название комнаты из callback_data
@@ -170,27 +173,122 @@ async def room_selected(callback: CallbackQuery, state: FSMContext):
     # Сохраняем выбранную комнату
     await state.update_data(room=room_type)
 
+    # Переходим в состояние выбора режима дизайна
+    await state.set_state(CreationStates.choose_mode)
+    logger.info(f"[ROOM_SELECTED] ✅ State: CreationStates.choose_mode")
+
+    menu_message_id = callback.message.message_id
+
+    # Формируем красивое название комнаты для отображения
+    room_names = {
+        'dining_room': 'Столовая',
+        'kitchen': 'Кухня',
+        'living_room': 'Гостиная',
+        'bedroom': 'Спальня',
+        'office_work': 'Кабинет для работы',
+        'wardrobe_closet': 'Гардеробная',
+        'kids_room': 'Детская комната',
+        'entrance_hall': 'Прихожая',
+        'toilet_restroom': 'Санузел',
+        'bathroom_bath': 'Ванная',
+        'balcony_terrace': 'Балкон',
+        'manroom_den': 'Мужская берлога',
+        'office_business': 'Офис',
+        'restaurant': 'Ресторан',
+        'cafe': 'Кафе',
+        'dental': 'Стоматология',
+        'massage': 'Массажный салон',
+        'warehouse': 'Склад',
+        'shop': 'Магазин',
+        'salon': 'Салон красоты',
+        'gym': 'Фитнес-клуб',
+        'grocery': 'Продуктовый',
+    }
+
+    room_display_name = room_names.get(room_type, room_type.replace('_', ' ').title())
+
+    # Показываем экран выбора режима
+    design_mode_text = DESIGN_MODE_TEXT.format(room_name=room_display_name)
+
+    log_message_send(callback.from_user.id, design_mode_text, 2)
+
+    await edit_menu(
+        callback=callback,
+        message_id=menu_message_id,
+        text=design_mode_text,
+        keyboard=get_design_mode_keyboard(),
+    )
+
+    await state.update_data(menu_message_id=menu_message_id)
+    await log_state(state, "STATE ПОСЛЕ ВЫБОРА КОМНАТЫ → ВЫБОР РЕЖИМА")
+
+
+# ===== РЕЖИМ 1: "ПОСМОТРЕТЬ И ВЫБРАТЬ ДИЗАЙН" =====
+@router.callback_query(F.data == "mode_select_design")
+@debug_handler
+async def mode_select_design(callback: CallbackQuery, state: FSMContext):
+    """
+    Режим: Посмотреть и выбрать готовый дизайн.
+    Ведет к выбору стилей → генерация
+    """
+    logger.info(f"[MODE_SELECT] 🎯 Выбран режим: Посмотреть и выбрать дизайн")
+
+    log_user_choice(callback.from_user.id, "Режим", "Посмотреть и выбрать дизайн")
+
+    # Переходим в состояние выбора стиля
+    await state.set_state(CreationStates.choose_style)
+    logger.info(f"[MODE_SELECT] ✅ State: CreationStates.choose_style")
+
+    menu_message_id = callback.message.message_id
+
+    # Показываем экран выбора стиля
+    from keyboards.inline import get_style_keyboard
+    from utils.texts import CHOOSE_STYLE_TEXT
+
+    await edit_menu(
+        callback=callback,
+        message_id=menu_message_id,
+        text=CHOOSE_STYLE_TEXT,
+        keyboard=get_style_keyboard(),
+    )
+
+    await state.update_data(menu_message_id=menu_message_id)
+    await log_state(state, "STATE → ВЫБОР СТИЛЯ")
+
+
+# ===== РЕЖИМ 2: "СОЗДАТЬ СВОЙ ИНТЕРЬЕР" =====
+@router.callback_query(F.data == "mode_create_custom")
+@debug_handler
+async def mode_create_custom(callback: CallbackQuery, state: FSMContext):
+    """
+    Режим: Создать свой интерьер.
+    Ведет к выбору мебели → цветов → генерация
+    """
+    logger.info(f"[MODE_CUSTOM] 🎯 Выбран режим: Создать свой интерьер")
+
+    log_user_choice(callback.from_user.id, "Режим", "Создать свой интерьер")
+
     # Переходим в состояние выбора мебели
-    await state.set_state(CreationStates.choose_room)
-    logger.info(f"[ROOM_SELECTED] ✅ State: CreationStates.choose_room")
+    await state.set_state(CreationStates.choose_furniture)
+    logger.info(f"[MODE_CUSTOM] ✅ State: CreationStates.choose_furniture")
 
     menu_message_id = callback.message.message_id
 
     # Показываем экран выбора мебели
     try:
         from handlers.design_step1_furniture import show_furniture_screen
-        logger.info(f"[ROOM_SELECTED] 📥 Импорт show_furniture_screen успешен")
+        logger.info(f"[MODE_CUSTOM] 📥 Импорт show_furniture_screen успешен")
 
         await show_furniture_screen(callback.message, state)
-        logger.info(f"[ROOM_SELECTED] ✅ Экран мебели показан")
+        logger.info(f"[MODE_CUSTOM] ✅ Экран мебели показан")
 
     except Exception as e:
-        logger.error(f"[ROOM_SELECTED] ❌ Ошибка при показе экрана мебели: {e}", exc_info=True)
+        logger.error(f"[MODE_CUSTOM] ❌ Ошибка при показе экрана мебели: {e}", exc_info=True)
         await callback.answer(f"❌ Ошибка: {e}", show_alert=True)
         return
 
     await state.update_data(menu_message_id=menu_message_id)
-    await log_state(state, "STATE ПОСЛЕ ВЫБОРА КОМНАТЫ")
+    await log_state(state, "STATE → ВЫБОР МЕБЕЛИ")
 
 
 # ===== ПРОФИЛЬ =====
@@ -243,3 +341,18 @@ async def buy_generations(callback: CallbackQuery, state: FSMContext):
 
     await callback.answer("💳 Переходим к покупке токенов...")
     logger.info(f"[BUY] ✅ Ответ отправлен")
+
+# ===== НАЗАД К ВЫБОРУ КОМНАТ =====
+@router.callback_query(F.data == "back_to_rooms")
+@debug_handler
+async def back_to_rooms(callback: CallbackQuery, state: FSMContext):
+    """Вернуться к выбору комнат"""
+    logger.info(f"[BACK_TO_ROOMS] 🎯 Возврат к выбору комнат")
+
+    data = await state.get_data()
+    current_menu = data.get('current_menu', 'home')  # home или business
+
+    if current_menu == 'business':
+        await business_menu(callback, state)
+    else:
+        await home_menu(callback, state)

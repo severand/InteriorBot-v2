@@ -24,7 +24,6 @@ class MainMenuStates(StatesGroup):
 class CreationStates(StatesGroup):
     """
     Состояния для процесса создания дизайна.
-    (Сохранено для совместимости со старыми обработчиками)
     """
 
     # Ожидаем загрузку фото комнаты
@@ -32,6 +31,12 @@ class CreationStates(StatesGroup):
 
     # Выбираем тип комнаты (спальня, гостиная и т.д.)
     choose_room = State()
+
+    # ✅ НОВОЕ: Выбираем режим создания дизайна
+    choose_mode = State()
+
+    # ✅ НОВОЕ: Выбираем мебель (для режима "Создать свой")
+    choose_furniture = State()
 
     # Выбираем стиль дизайна
     choose_style = State()

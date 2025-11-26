@@ -146,9 +146,9 @@ async def toggle_furniture(query: types.CallbackQuery, state: FSMContext):
         await state.update_data(furniture=selected)
         await show_furniture_screen(query.message, state)
 
-        emoji, label = furniture_options.get(key, ('❓', '?'))
-        await query.answer(f"{action}: {label}", show_alert=False)
-        logger.info(f"[FURNITURE_TOGGLE] ✅ Answer отправлен")
+        # ✅ ИСПРАВЛЕНИЕ: Убираем текст из answer - только закрываем "часики"
+        await query.answer()  # ← БЕЗ ТЕКСТА И БЕЗ show_alert
+        logger.info(f"[FURNITURE_TOGGLE] ✅ Answer отправлен (без уведомления)")
 
     except Exception as e:
         logger.error(f"[ERROR] ❌ Ошибка в toggle_furniture: {e}", exc_info=True)
@@ -162,7 +162,8 @@ async def go_to_colors(query: types.CallbackQuery, state: FSMContext):
     logger.info(f"[GO_TO_COLORS] 🎯 Переходим к цветам")
 
     try:
-        await query.answer("🎨 К цветам...")
+        # ✅ ИСПРАВЛЕНИЕ: Убираем текст из answer
+        await query.answer()  # ← БЕЗ ТЕКСТА
         logger.info(f"[GO_TO_COLORS] ✅ Answer отправлен")
 
         from handlers.design_step2_colors import show_colors_screen

@@ -229,3 +229,33 @@ def get_post_generation_keyboard() -> InlineKeyboardMarkup:
     )
 
     return builder.as_markup()
+
+# ===== ВЫБОР РЕЖИМА ДИЗАЙНА (НОВОЕ!) =====
+def get_design_mode_keyboard() -> InlineKeyboardMarkup:
+    """
+    Клавиатура выбора режима создания дизайна.
+    Появляется ПОСЛЕ выбора комнаты.
+    """
+    builder = InlineKeyboardBuilder()
+
+    builder.row(
+        InlineKeyboardButton(
+            text="🎨 Посмотреть и выбрать дизайн",
+            callback_data="mode_select_design"
+        )
+    )
+    builder.row(
+        InlineKeyboardButton(
+            text="🛋️ Создать свой интерьер",
+            callback_data="mode_create_custom"
+        )
+    )
+    builder.row(
+        InlineKeyboardButton(text="⬅️ Назад к комнатам", callback_data="back_to_rooms")
+    )
+    builder.row(
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu")
+    )
+
+    return builder.as_markup()
+

@@ -106,6 +106,9 @@ async def photo_uploaded(message: Message, state: FSMContext, admins: list[int])
 # ===== ВЫБОР КОМНАТЫ =====
 @router.callback_query(CreationStates.choose_room, F.data.startswith("room_"))
 async def room_chosen(callback: CallbackQuery, state: FSMContext, admins: list[int]):
+    # ← ДОБАВЬ ОДНУ СТРОКУ:
+    logger.info(f"✅ HANDLER room_chosen ВЫЗВАН! Callback: {callback.data}, State: {await state.get_state()}")
+
     room = callback.data.split("_")[-1]
     user_id = callback.from_user.id
     if user_id not in admins:

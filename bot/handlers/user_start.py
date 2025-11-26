@@ -1,4 +1,5 @@
-# bot/handlers/user_start.py
+# handlers/user_start.py
+# С ОТЛАДКОЙ
 
 import logging
 from aiogram import Router, F
@@ -22,22 +23,41 @@ from utils.texts import (
 )
 from utils.navigation import edit_menu
 from states.fsm import MainMenuStates
+from utils.debug import (  # ← ИМПОРТИРУЕМ ОТЛАДЧИК
+    debug_handler,
+    log_state,
+    log_user_choice,
+    log_message_send,
+    log_state_transition,
+)
 
 logger = logging.getLogger(__name__)
 router = Router()
 
+logger.info("🔧 [user_start.py] Модуль загружен")
+
 
 # ===== СТАРТ БОТА =====
 @router.message(Command("start"))
+@debug_handler  # ← ДОБАВЛЯЕМ ОТЛАДКУ
 async def start_command(message: Message, state: FSMContext):
     """Команда /start — показать главное меню"""
     user_id = message.from_user.id
 
+    logger.info(f"[START] 🎯 Запуск /start для user {user_id}")
+
     # Создаём пользователя если его нет
     await db.create_user(user_id, message.from_user.username or "Unknown")
+    logger.info(f"[START] ✅ Пользователь создан/проверен")
 
     await state.clear()
+    logger.info(f"[START] ✅ State очищена")
+
     await state.set_state(MainMenuStates.main_menu)
+    logger.info(f"[START] ✅ State установлена: main_menu")
+
+    # ОТЛАДКА: Какой текст отправляем?
+    log_message_send(user_id, START_TEXT, 3)
 
     # Отправляем главное меню
     menu = await message.answer(
@@ -45,20 +65,28 @@ async def start_command(message: Message, state: FSMContext):
         reply_markup=get_main_menu_keyboard(),
         parse_mode="Markdown"
     )
+    logger.info(f"[START] ✅ Главное меню отправлено, message_id: {menu.message_id}")
 
     # СОХРАНЯЕМ message_id в state
     await state.update_data(menu_message_id=menu.message_id)
 
+    await log_state(state, "STATE ПОСЛЕ /start")
+
 
 # ===== ГЛАВНОЕ МЕНЮ =====
 @router.callback_query(F.data == "main_menu")
+@debug_handler  # ← ДОБАВЛЯЕМ ОТЛАДКУ
 async def go_to_main_menu(callback: CallbackQuery, state: FSMContext):
     """Вернуться в главное меню"""
+    logger.info(f"[MAIN_MENU] 🎯 Callback: {callback.data}")
+
     await state.clear()
     await state.set_state(MainMenuStates.main_menu)
 
-    # ПОЛУЧАЕМ message_id из callback.message, не из state!
     menu_message_id = callback.message.message_id
+    logger.info(f"[MAIN_MENU] ✅ Message ID: {menu_message_id}")
+
+    log_message_send(callback.from_user.id, MAIN_MENU_TEXT, 3)
 
     await edit_menu(
         callback=callback,
@@ -67,18 +95,27 @@ async def go_to_main_menu(callback: CallbackQuery, state: FSMContext):
         keyboard=get_main_menu_keyboard(),
     )
 
-    # ОБНОВЛЯЕМ state с новым message_id
     await state.update_data(menu_message_id=menu_message_id)
+    await log_state(state, "STATE В ГЛАВНОМ МЕНЮ")
 
 
 # ===== "ДЛЯ ДОМА" =====
 @router.callback_query(F.data == "menu_home")
+@debug_handler  # ← ДОБАВЛЯЕМ ОТЛАДКУ
 async def home_menu(callback: CallbackQuery, state: FSMContext):
-    """Меню "Для дома" — РЕДАКТИРУЕМ существующее сообщение"""
-    await state.set_state(MainMenuStates.home_menu)
+    """Меню "Для дома" """
+    logger.info(f"[HOME_MENU] 🎯 Callback: {callback.data}")
+    # ← ДОБАВЬ ОДНУ СТРОКУ:
+    logger.info(f"✅ HANDLER home_menu ВЫЗВАН! Callback: {callback.data}")
 
-    # ПОЛУЧАЕМ message_id из callback.message, не из state!
+    log_user_choice(callback.from_user.id, "Меню", "Для дома")
+
+    await state.set_state(MainMenuStates.home_menu)
+    logger.info(f"[HOME_MENU] ✅ State: home_menu")
+
     menu_message_id = callback.message.message_id
+
+    log_message_send(callback.from_user.id, HOME_TEXT, 12)
 
     await edit_menu(
         callback=callback,
@@ -87,18 +124,25 @@ async def home_menu(callback: CallbackQuery, state: FSMContext):
         keyboard=get_home_rooms_keyboard(),
     )
 
-    # ОБНОВЛЯЕМ state с новым message_id
     await state.update_data(menu_message_id=menu_message_id)
+    await log_state(state, "STATE В МЕНЮ ДОМА")
 
 
 # ===== "ДЛЯ БИЗНЕСА" =====
 @router.callback_query(F.data == "menu_business")
+@debug_handler  # ← ДОБАВЛЯЕМ ОТЛАДКУ
 async def business_menu(callback: CallbackQuery, state: FSMContext):
-    """Меню "Для бизнеса" — РЕДАКТИРУЕМ существующее сообщение"""
-    await state.set_state(MainMenuStates.business_menu)
+    """Меню "Для бизнеса" """
+    logger.info(f"[BUSINESS_MENU] 🎯 Callback: {callback.data}")
 
-    # ПОЛУЧАЕМ message_id из callback.message, не из state!
+    log_user_choice(callback.from_user.id, "Меню", "Для бизнеса")
+
+    await state.set_state(MainMenuStates.business_menu)
+    logger.info(f"[BUSINESS_MENU] ✅ State: business_menu")
+
     menu_message_id = callback.message.message_id
+
+    log_message_send(callback.from_user.id, BUSINESS_TEXT, 10)
 
     await edit_menu(
         callback=callback,
@@ -107,21 +151,26 @@ async def business_menu(callback: CallbackQuery, state: FSMContext):
         keyboard=get_business_rooms_keyboard(),
     )
 
-    # ОБНОВЛЯЕМ state с новым message_id
     await state.update_data(menu_message_id=menu_message_id)
+    await log_state(state, "STATE В МЕНЮ БИЗНЕСА")
 
 
 # ===== ПРОФИЛЬ =====
 @router.callback_query(F.data == "menu_profile")
+@debug_handler  # ← ДОБАВЛЯЕМ ОТЛАДКУ
 async def profile_callback(callback: CallbackQuery, state: FSMContext):
-    """Показать профиль пользователя — РЕДАКТИРУЕМ существующее сообщение"""
+    """Показать профиль пользователя"""
+    logger.info(f"[PROFILE] 🎯 Callback: {callback.data}")
+
     await state.set_state(MainMenuStates.profile)
+    logger.info(f"[PROFILE] ✅ State: profile")
 
     user_id = callback.from_user.id
     username = callback.from_user.username or "Не указано"
 
     # Получаем баланс пользователя
     balance = await db.get_balance(user_id)
+    logger.info(f"[PROFILE] ✅ Баланс: {balance}")
 
     profile_text = PROFILE_TEXT.format(
         user_id=user_id,
@@ -130,8 +179,9 @@ async def profile_callback(callback: CallbackQuery, state: FSMContext):
         reg_date="Недавно"
     )
 
-    # ПОЛУЧАЕМ message_id из callback.message, не из state!
     menu_message_id = callback.message.message_id
+
+    log_message_send(user_id, profile_text, 2)
 
     await edit_menu(
         callback=callback,
@@ -140,12 +190,18 @@ async def profile_callback(callback: CallbackQuery, state: FSMContext):
         keyboard=get_profile_keyboard(),
     )
 
-    # ОБНОВЛЯЕМ state с новым message_id
     await state.update_data(menu_message_id=menu_message_id)
+    await log_state(state, "STATE В ПРОФИЛЕ")
 
 
-# ===== BUY TOKENS (из профиля) =====
+# ===== BUY TOKENS =====
 @router.callback_query(F.data == "buy_generations")
+@debug_handler  # ← ДОБАВЛЯЕМ ОТЛАДКУ
 async def buy_generations(callback: CallbackQuery, state: FSMContext):
     """Перейти к покупке токенов"""
-    await callback.answer()
+    logger.info(f"[BUY] 🎯 Callback: {callback.data}")
+
+    log_user_choice(callback.from_user.id, "Действие", "Купить токены")
+
+    await callback.answer("💳 Переходим к покупке токенов...")
+    logger.info(f"[BUY] ✅ Ответ отправлен")

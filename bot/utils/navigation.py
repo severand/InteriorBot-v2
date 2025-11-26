@@ -27,7 +27,7 @@ async def edit_menu(
             message_id=message_id,
             text=text,
             reply_markup=keyboard,
-            parse_mode="Markdown"
+            parse_mode="HTML"
         )
     except Exception as e:
         print(f"[navigation.edit_menu] Ошибка при редактировании сообщения {message_id}: {e}")

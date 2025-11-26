@@ -1,16 +1,39 @@
-# db
+# bot/database/db.py
 
 import aiosqlite
 from typing import Optional, Dict, Any
+import logging
 
-# ИСПРАВЛЕНО: Импортируем config из папки bot (абсолютный импорт)
 from config import config
-
 from database.models import (
-    CREATE_USERS_TABLE, CREATE_PAYMENTS_TABLE,
-    GET_USER, CREATE_USER, UPDATE_BALANCE, DECREASE_BALANCE,
-    GET_BALANCE, CREATE_PAYMENT, GET_PENDING_PAYMENT, UPDATE_PAYMENT_STATUS
+    CREATE_USERS_TABLE,
+    CREATE_PAYMENTS_TABLE,
+    CREATE_ANALYTICS_TABLE,
+    GET_USER,
+    CREATE_USER,
+    UPDATE_BALANCE,
+    DECREASE_BALANCE,
+    GET_BALANCE,
+    CREATE_PAYMENT,
+    GET_PENDING_PAYMENT,
+    UPDATE_PAYMENT_STATUS,
+    LOG_ANALYTICS,
+    GET_TOTAL_USERS,
+    GET_NEW_USERS_TODAY,
+    GET_NEW_USERS_WEEK,
+    GET_NEW_USERS_MONTH,
+    GET_TOTAL_GENERATIONS,
+    GET_GENERATIONS_TODAY,
+    GET_TOTAL_REVENUE,
+    GET_REVENUE_TODAY,
+    GET_REVENUE_WEEK,
+    GET_REVENUE_MONTH,
+    GET_POPULAR_ROOMS,
+    GET_POPULAR_STYLES,
+    GET_ALL_USERS,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class Database:
@@ -25,6 +48,14 @@ class Database:
             await db.execute(CREATE_USERS_TABLE)
             await db.execute(CREATE_PAYMENTS_TABLE)
             await db.commit()
+            logger.info("✅ Database initialized")
+
+    async def init_analytics_table(self):
+        """Initialize analytics table"""
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(CREATE_ANALYTICS_TABLE)
+            await db.commit()
+            logger.info("✅ Analytics table initialized")
 
     async def get_user(self, user_id: int) -> Optional[Dict[str, Any]]:
         """Get user by ID"""
@@ -42,7 +73,6 @@ class Database:
         if user_exists:
             return False
 
-        # Используем FREE_GENERATIONS из config
         initial_balance = config.FREE_GENERATIONS
 
         async with aiosqlite.connect(self.db_path) as db:
@@ -93,7 +123,114 @@ class Database:
                     return dict(row)
                 return None
 
-    # Добавлены методы для payments.py, которых не хватало в твоем коде
+    async def update_payment_status(self, payment_id: str, status: str) -> bool:
+        """Update payment status"""
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(UPDATE_PAYMENT_STATUS, (status, payment_id))
+            await db.commit()
+            return True
+
+    # ===== ANALYTICS METHODS =====
+
+    async def log_analytics(self, user_id: int, action: str, room: str = None,
+                           style: str = None, status: str = "success", cost: float = 1):
+        """Log user action to analytics"""
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(LOG_ANALYTICS, (user_id, action, room, style, status, cost))
+            await db.commit()
+
+    async def get_total_users(self) -> int:
+        """Get total number of users"""
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute(GET_TOTAL_USERS) as cursor:
+                row = await cursor.fetchone()
+                return row[0] if row else 0
+
+    async def get_new_users_today(self) -> int:
+        """Get new users registered today"""
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute(GET_NEW_USERS_TODAY) as cursor:
+                row = await cursor.fetchone()
+                return row[0] if row else 0
+
+    async def get_new_users_week(self) -> int:
+        """Get new users registered this week"""
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute(GET_NEW_USERS_WEEK) as cursor:
+                row = await cursor.fetchone()
+                return row[0] if row else 0
+
+    async def get_new_users_month(self) -> int:
+        """Get new users registered this month"""
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute(GET_NEW_USERS_MONTH) as cursor:
+                row = await cursor.fetchone()
+                return row[0] if row else 0
+
+    async def get_total_generations(self) -> int:
+        """Get total generations"""
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute(GET_TOTAL_GENERATIONS) as cursor:
+                row = await cursor.fetchone()
+                return row[0] if row else 0
+
+    async def get_generations_today(self) -> int:
+        """Get generations today"""
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute(GET_GENERATIONS_TODAY) as cursor:
+                row = await cursor.fetchone()
+                return row[0] if row else 0
+
+    async def get_total_revenue(self) -> float:
+        """Get total revenue"""
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute(GET_TOTAL_REVENUE) as cursor:
+                row = await cursor.fetchone()
+                return row[0] if row else 0
+
+    async def get_revenue_today(self) -> float:
+        """Get revenue today"""
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute(GET_REVENUE_TODAY) as cursor:
+                row = await cursor.fetchone()
+                return row[0] if row else 0
+
+    async def get_revenue_week(self) -> float:
+        """Get revenue this week"""
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute(GET_REVENUE_WEEK) as cursor:
+                row = await cursor.fetchone()
+                return row[0] if row else 0
+
+    async def get_revenue_month(self) -> float:
+        """Get revenue this month"""
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute(GET_REVENUE_MONTH) as cursor:
+                row = await cursor.fetchone()
+                return row[0] if row else 0
+
+    async def get_popular_rooms(self):
+        """Get most popular rooms"""
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute(GET_POPULAR_ROOMS) as cursor:
+                return await cursor.fetchall()
+
+    async def get_popular_styles(self):
+        """Get most popular styles"""
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute(GET_POPULAR_STYLES) as cursor:
+                return await cursor.fetchall()
+
+    async def get_all_users(self):
+        """Get all users"""
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute(GET_ALL_USERS) as cursor:
+                return await cursor.fetchall()
+
+    # Legacy methods for compatibility
     async def get_last_pending_payment(self, user_id: int):
         return await self.get_pending_payment(user_id)
 
@@ -105,13 +242,6 @@ class Database:
 
     async def get_user_data(self, user_id: int):
         return await self.get_user(user_id)
-
-    async def update_payment_status(self, payment_id: str, status: str) -> bool:
-        """Update payment status"""
-        async with aiosqlite.connect(self.db_path) as db:
-            await db.execute(UPDATE_PAYMENT_STATUS, (status, payment_id))
-            await db.commit()
-            return True
 
 
 # Инициализация БД

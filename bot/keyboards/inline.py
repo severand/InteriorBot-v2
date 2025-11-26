@@ -240,7 +240,7 @@ def get_design_mode_keyboard() -> InlineKeyboardMarkup:
 
     builder.row(
         InlineKeyboardButton(
-            text="🎨 Посмотреть и выбрать дизайн",
+            text="🎨     Посмотреть и выбрать дизайн                ",
             callback_data="mode_select_design"
         )
     )

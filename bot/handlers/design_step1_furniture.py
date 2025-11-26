@@ -78,10 +78,10 @@ async def show_furniture_screen(message: types.Message, state: FSMContext):
         furniture_options = FURNITURE_BY_ROOM.get(room, {})
         logger.info(f"[FURNITURE_SCREEN] ✅ Furniture options loaded: {len(furniture_options)}")
 
-        text = f"🛋️ <b>{room.upper()} - ВЫБЕРИ МЕБЕЛЬ</b>\n\n"
+        text = f"🛋️ <b>{room.upper()} - выберите обстановку</b>\n\n"
 
         if selected:
-            text += "✅ <b>ВЫБРАННАЯ:</b>\n"
+            text += "✅ <b>выбрано:</b>\n"
             for key in selected.keys():
                 if key in furniture_options:
                     emoji, label = furniture_options[key]

@@ -88,7 +88,7 @@ async def show_furniture_screen(message: types.Message, state: FSMContext):
                     text += f"• {label}\n"
             text += "\n"
 
-       # text += "🔄 <b>ДОСТУПНЫЕ:</b>\n"
+       #  text += "🔄 <b>ДОСТУПНЫЕ:</b>\n"
 
         buttons = []
         for key, (emoji, label) in furniture_options.items():

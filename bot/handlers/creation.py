@@ -15,6 +15,8 @@ from database.db import db
 from keyboards.inline import (
     get_main_menu_keyboard,
     get_profile_keyboard,
+    get_post_generation_keyboard,  # ← ДОБАВИТЬ ЭТУ СТРОКУ!
+    get_style_keyboard,
 )
 
 from services.replicate_api import generate_image
@@ -162,6 +164,7 @@ async def style_chosen(callback: CallbackQuery, state: FSMContext, admins: list[
             caption=f"✨ Ваш новый дизайн в стиле *{style.replace('_', ' ').title()}*!",
             parse_mode="Markdown"
         )
+       # сообщение после генерации дизайна
         menu = await callback.message.answer(
             "Что дальше?",
             reply_markup=get_post_generation_keyboard()

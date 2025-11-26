@@ -356,3 +356,67 @@ async def back_to_rooms(callback: CallbackQuery, state: FSMContext):
         await business_menu(callback, state)
     else:
         await home_menu(callback, state)
+
+
+# ===== НАЗАД К ВЫБОРУ РЕЖИМА (ИЗ СТИЛЕЙ ИЛИ МЕБЕЛИ) =====
+@router.callback_query(F.data == "back_to_mode_selection")
+@debug_handler
+async def back_to_mode_selection(callback: CallbackQuery, state: FSMContext):
+    """Вернуться к выбору режима (экран с 2 кнопками)"""
+    logger.info(f"[BACK_TO_MODE] 🎯 Возврат к экрану выбора режима")
+
+    # Получаем room из state
+    data = await state.get_data()
+    room_type = data.get('room')
+
+    if not room_type:
+        logger.error("[BACK_TO_MODE] ❌ Room не найден в state")
+        await callback.answer("❌ Ошибка: комната не найдена", show_alert=True)
+        return
+
+    # ✅ ИСПРАВЛЕНИЕ: НЕ МЕНЯЕМ callback.data - вместо этого вызываем напрямую
+    menu_message_id = callback.message.message_id
+
+    # Формируем красивое название комнаты для отображения
+    room_names = {
+        'dining_room': 'Столовая',
+        'kitchen': 'Кухня',
+        'living_room': 'Гостиная',
+        'bedroom': 'Спальня',
+        'office_work': 'Кабинет для работы',
+        'wardrobe_closet': 'Гардеробная',
+        'kids_room': 'Детская комната',
+        'entrance_hall': 'Прихожая',
+        'toilet_restroom': 'Санузел',
+        'bathroom_bath': 'Ванная',
+        'balcony_terrace': 'Балкон',
+        'manroom_den': 'Мужская берлога',
+        'office_business': 'Офис',
+        'restaurant': 'Ресторан',
+        'cafe': 'Кафе',
+        'dental': 'Стоматология',
+        'massage': 'Массажный салон',
+        'warehouse': 'Склад',
+        'shop': 'Магазин',
+        'salon': 'Салон красоты',
+        'gym': 'Фитнес-клуб',
+        'grocery': 'Продуктовый',
+    }
+
+    room_display_name = room_names.get(room_type, room_type.replace('_', ' ').title())
+
+    # Переходим в состояние выбора режима дизайна
+    await state.set_state(CreationStates.choose_mode)
+
+    # Показываем экран выбора режима
+    design_mode_text = DESIGN_MODE_TEXT.format(room_name=room_display_name)
+
+    await edit_menu(
+        callback=callback,
+        message_id=menu_message_id,
+        text=design_mode_text,
+        keyboard=get_design_mode_keyboard(),
+    )
+
+    await state.update_data(menu_message_id=menu_message_id)
+    logger.info(f"[BACK_TO_MODE] ✅ Вернулись к выбору режима")

@@ -53,11 +53,13 @@ OFFICE_FURNITURE = {
     'lamp': ('💡', 'Лампа'),
 }
 
+# ✅ ТОЛЬКО ЭТО ИЗМЕНИЛ - добавил маппинг для office_work
 FURNITURE_BY_ROOM = {
     'kitchen': KITCHEN_FURNITURE,
     'bedroom': BEDROOM_FURNITURE,
     'living_room': LIVING_ROOM_FURNITURE,
     'office': OFFICE_FURNITURE,
+    'office_work': OFFICE_FURNITURE,  # ← ДОБАВИЛ ТОЛЬКО ЭТУ СТРОКУ!
 }
 
 
@@ -105,6 +107,10 @@ async def show_furniture_screen(message: types.Message, state: FSMContext):
             for i in range(0, len(buttons), 2)
         ]
 
+        # ✅ ДОБАВИЛ ТОЛЬКО ЭТУ КНОПКУ!
+        keyboard_buttons.append([
+            types.InlineKeyboardButton(text="⬅️ Назад", callback_data="back_to_mode_selection"),
+        ])
         keyboard_buttons.append([
             types.InlineKeyboardButton(text="➡️ ДАЛЕЕ: ЦВЕТА", callback_data="to_colors"),
         ])
@@ -146,8 +152,7 @@ async def toggle_furniture(query: types.CallbackQuery, state: FSMContext):
         await state.update_data(furniture=selected)
         await show_furniture_screen(query.message, state)
 
-        # ✅ ИСПРАВЛЕНИЕ: Убираем текст из answer - только закрываем "часики"
-        await query.answer()  # ← БЕЗ ТЕКСТА И БЕЗ show_alert
+        await query.answer()
         logger.info(f"[FURNITURE_TOGGLE] ✅ Answer отправлен (без уведомления)")
 
     except Exception as e:
@@ -162,8 +167,7 @@ async def go_to_colors(query: types.CallbackQuery, state: FSMContext):
     logger.info(f"[GO_TO_COLORS] 🎯 Переходим к цветам")
 
     try:
-        # ✅ ИСПРАВЛЕНИЕ: Убираем текст из answer
-        await query.answer()  # ← БЕЗ ТЕКСТА
+        await query.answer()
         logger.info(f"[GO_TO_COLORS] ✅ Answer отправлен")
 
         from handlers.design_step2_colors import show_colors_screen

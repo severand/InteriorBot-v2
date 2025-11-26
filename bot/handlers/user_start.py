@@ -1,5 +1,5 @@
 # handlers/user_start.py
-# С ОТЛАДКОЙ
+# С ОТЛАДКОЙ И ИСПРАВЛЕНИЕМ
 
 import logging
 from aiogram import Router, F
@@ -22,8 +22,8 @@ from utils.texts import (
     BUSINESS_TEXT,
 )
 from utils.navigation import edit_menu
-from states.fsm import MainMenuStates
-from utils.debug import (  # ← ИМПОРТИРУЕМ ОТЛАДЧИК
+from states.fsm import MainMenuStates, CreationStates  # ← ДОБАВЛЕН CreationStates
+from utils.debug import (
     debug_handler,
     log_state,
     log_user_choice,
@@ -39,7 +39,7 @@ logger.info("🔧 [user_start.py] Модуль загружен")
 
 # ===== СТАРТ БОТА =====
 @router.message(Command("start"))
-@debug_handler  # ← ДОБАВЛЯЕМ ОТЛАДКУ
+@debug_handler
 async def start_command(message: Message, state: FSMContext):
     """Команда /start — показать главное меню"""
     user_id = message.from_user.id
@@ -56,7 +56,6 @@ async def start_command(message: Message, state: FSMContext):
     await state.set_state(MainMenuStates.main_menu)
     logger.info(f"[START] ✅ State установлена: main_menu")
 
-    # ОТЛАДКА: Какой текст отправляем?
     log_message_send(user_id, START_TEXT, 3)
 
     # Отправляем главное меню
@@ -75,7 +74,7 @@ async def start_command(message: Message, state: FSMContext):
 
 # ===== ГЛАВНОЕ МЕНЮ =====
 @router.callback_query(F.data == "main_menu")
-@debug_handler  # ← ДОБАВЛЯЕМ ОТЛАДКУ
+@debug_handler
 async def go_to_main_menu(callback: CallbackQuery, state: FSMContext):
     """Вернуться в главное меню"""
     logger.info(f"[MAIN_MENU] 🎯 Callback: {callback.data}")
@@ -101,11 +100,10 @@ async def go_to_main_menu(callback: CallbackQuery, state: FSMContext):
 
 # ===== "ДЛЯ ДОМА" =====
 @router.callback_query(F.data == "menu_home")
-@debug_handler  # ← ДОБАВЛЯЕМ ОТЛАДКУ
+@debug_handler
 async def home_menu(callback: CallbackQuery, state: FSMContext):
     """Меню "Для дома" """
     logger.info(f"[HOME_MENU] 🎯 Callback: {callback.data}")
-    # ← ДОБАВЬ ОДНУ СТРОКУ:
     logger.info(f"✅ HANDLER home_menu ВЫЗВАН! Callback: {callback.data}")
 
     log_user_choice(callback.from_user.id, "Меню", "Для дома")
@@ -130,7 +128,7 @@ async def home_menu(callback: CallbackQuery, state: FSMContext):
 
 # ===== "ДЛЯ БИЗНЕСА" =====
 @router.callback_query(F.data == "menu_business")
-@debug_handler  # ← ДОБАВЛЯЕМ ОТЛАДКУ
+@debug_handler
 async def business_menu(callback: CallbackQuery, state: FSMContext):
     """Меню "Для бизнеса" """
     logger.info(f"[BUSINESS_MENU] 🎯 Callback: {callback.data}")
@@ -155,9 +153,49 @@ async def business_menu(callback: CallbackQuery, state: FSMContext):
     await log_state(state, "STATE В МЕНЮ БИЗНЕСА")
 
 
+# ===== ВЫБОР КОМНАТЫ (ДЛЯ ДОМА И БИЗНЕСА) =====
+# ✅ ЭТО НОВЫЙ ОБРАБОТЧИК - ГЛАВНОЕ ИСПРАВЛЕНИЕ!
+@router.callback_query(F.data.startswith("room_"))
+@debug_handler
+async def room_selected(callback: CallbackQuery, state: FSMContext):
+    """Обработка выбора комнаты"""
+    logger.info(f"[ROOM_SELECTED] 🎯 Callback: {callback.data}")
+
+    # Извлекаем название комнаты из callback_data
+    room_type = callback.data.replace("room_", "")
+    logger.info(f"[ROOM_SELECTED] ✅ Выбрана комната: {room_type}")
+
+    log_user_choice(callback.from_user.id, "Комната", room_type)
+
+    # Сохраняем выбранную комнату
+    await state.update_data(room=room_type)
+
+    # Переходим в состояние выбора мебели
+    await state.set_state(CreationStates.choose_room)
+    logger.info(f"[ROOM_SELECTED] ✅ State: CreationStates.choose_room")
+
+    menu_message_id = callback.message.message_id
+
+    # Показываем экран выбора мебели
+    try:
+        from handlers.design_step1_furniture import show_furniture_screen
+        logger.info(f"[ROOM_SELECTED] 📥 Импорт show_furniture_screen успешен")
+
+        await show_furniture_screen(callback.message, state)
+        logger.info(f"[ROOM_SELECTED] ✅ Экран мебели показан")
+
+    except Exception as e:
+        logger.error(f"[ROOM_SELECTED] ❌ Ошибка при показе экрана мебели: {e}", exc_info=True)
+        await callback.answer(f"❌ Ошибка: {e}", show_alert=True)
+        return
+
+    await state.update_data(menu_message_id=menu_message_id)
+    await log_state(state, "STATE ПОСЛЕ ВЫБОРА КОМНАТЫ")
+
+
 # ===== ПРОФИЛЬ =====
 @router.callback_query(F.data == "menu_profile")
-@debug_handler  # ← ДОБАВЛЯЕМ ОТЛАДКУ
+@debug_handler
 async def profile_callback(callback: CallbackQuery, state: FSMContext):
     """Показать профиль пользователя"""
     logger.info(f"[PROFILE] 🎯 Callback: {callback.data}")
@@ -196,7 +234,7 @@ async def profile_callback(callback: CallbackQuery, state: FSMContext):
 
 # ===== BUY TOKENS =====
 @router.callback_query(F.data == "buy_generations")
-@debug_handler  # ← ДОБАВЛЯЕМ ОТЛАДКУ
+@debug_handler
 async def buy_generations(callback: CallbackQuery, state: FSMContext):
     """Перейти к покупке токенов"""
     logger.info(f"[BUY] 🎯 Callback: {callback.data}")

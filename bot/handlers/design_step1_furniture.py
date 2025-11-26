@@ -16,14 +16,14 @@ class FurnitureState(StatesGroup):
 
 
 KITCHEN_FURNITURE = {
-    'table': ('🍽️', 'Обеденный стол'),
-    'kitchen_set': ('🍳', 'Гарнитур'),
-    'fridge': ('🧊', 'Холодильник'),
-    'bar': ('🍷', 'Барная'),
-    'lighting': ('💡', 'Подсветка'),
-    'trash': ('🪣', 'Мусор'),
-    'microwave': ('🔧', 'Микро'),
-    'shelves': ('📚', 'Полки'),
+    'table': ('🍽️', 'Обеденный стол               '),
+    'kitchen_set': ('🍳', 'Гарнитур               '),
+    'fridge': ('🧊', 'Холодильник                  '),
+    'bar': ('🍷', 'Барная                         '),
+    'lighting': ('💡', 'Подсветка                 '),
+    'trash': ('🪣', 'Мусор                         '),
+    'microwave': ('🔧', 'Микро                     '),
+    'shelves': ('📚', 'Полки                      '),
 }
 
 BEDROOM_FURNITURE = {
@@ -88,14 +88,14 @@ async def show_furniture_screen(message: types.Message, state: FSMContext):
                     text += f"• {label}\n"
             text += "\n"
 
-        text += "🔄 <b>ДОСТУПНЫЕ:</b>\n"
+       # text += "🔄 <b>ДОСТУПНЫЕ:</b>\n"
 
         buttons = []
         for key, (emoji, label) in furniture_options.items():
-            status = "✅" if key in selected else "➕"
+            status = "✅" if key in selected else " "
             buttons.append(
                 types.InlineKeyboardButton(
-                    text=f"{status} {emoji} {label}",
+                    text=f"{status} {label}\u2063\u2063\u2063",
                     callback_data=f"furn:{key}"
                 )
             )

@@ -172,48 +172,6 @@ def get_payment_check_keyboard(confirmation_url: str) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-# ===== ВЫБОР СТИЛЯ (для creation.py) =====
-def get_style_keyboard() -> InlineKeyboardMarkup:
-    """
-    Клавиатура выбора стиля дизайна. По 2 в ряду.
-    """
-    builder = InlineKeyboardBuilder()
-
-    styles = [
-        ("🏢 Современный", "style_modern"),
-        ("⬜ Минимализм", "style_minimalism"),
-        ("🇸🇪 Скандинавский", "style_scandinavian"),
-        ("🏭 Лофт", "style_loft"),
-        ("🌾 Рустик", "style_rustic"),
-        ("🏜️ Джапанди", "style_japandi"),
-        ("🌸 Бохо", "style_boho"),
-        ("🌊 Средиземноморский", "style_mediterranean"),
-        ("📻 Mid-century", "style_midcentury"),
-        ("💎 Ар-деко", "style_art_deco"),
-    ]
-
-    # Добавляем по 2 кнопки в ряд
-    for i in range(0, len(styles), 2):
-        if i + 1 < len(styles):
-            builder.row(
-                InlineKeyboardButton(text=styles[i][0], callback_data=styles[i][1]),
-                InlineKeyboardButton(text=styles[i + 1][0], callback_data=styles[i + 1][1])
-            )
-        else:
-            builder.row(
-                InlineKeyboardButton(text=styles[i][0], callback_data=styles[i][1])
-            )
-
-    builder.row(
-        InlineKeyboardButton(text="⬅️ Назад", callback_data="back_to_room")
-    )
-    builder.row(
-        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu")
-    )
-
-    return builder.as_markup()
-
-
 # ===== ПОСЛЕ ГЕНЕРАЦИИ =====
 def get_post_generation_keyboard() -> InlineKeyboardMarkup:
     """
@@ -300,5 +258,36 @@ def get_style_keyboard() -> InlineKeyboardMarkup:
     )
 
     return builder.as_markup()
+
+
+
+def get_room_keyboard() -> InlineKeyboardMarkup:
+    """
+    Клавиатура выбора комнаты (используется при возврате из стилей).
+    """
+    builder = InlineKeyboardBuilder()
+
+    # Здесь нужно определить, показываем "Для дома" или "Для бизнеса"
+    # Временное решение - показываем общий список
+    rooms = [
+        ("🛋️ Столовая", "room_dining_room"),
+        ("🍳 Кухня", "room_kitchen"),
+        ("🛋️ Гостиная", "room_living_room"),
+        ("🛏️ Спальня", "room_bedroom"),
+    ]
+
+    for i in range(0, len(rooms), 2):
+        if i + 1 < len(rooms):
+            builder.row(
+                InlineKeyboardButton(text=rooms[i][0], callback_data=rooms[i][1]),
+                InlineKeyboardButton(text=rooms[i + 1][0], callback_data=rooms[i + 1][1])
+            )
+
+    builder.row(
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu")
+    )
+
+    return builder.as_markup()
+
 
 

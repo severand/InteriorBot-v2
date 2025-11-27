@@ -15,8 +15,10 @@ from database.db import db
 from keyboards.inline import (
     get_main_menu_keyboard,
     get_profile_keyboard,
-    get_post_generation_keyboard,  # ← ДОБАВИТЬ ЭТУ СТРОКУ!
+    get_post_generation_keyboard,
     get_style_keyboard,
+    get_payment_keyboard,  # ← ДОБАВИТЬ
+    get_room_keyboard,     # ← ДОБАВИТЬ (если она существует, иначе создать)
 )
 
 from services.replicate_api import generate_image

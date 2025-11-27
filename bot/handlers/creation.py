@@ -17,8 +17,8 @@ from keyboards.inline import (
     get_profile_keyboard,
     get_post_generation_keyboard,
     get_style_keyboard,
-    get_payment_keyboard,  # ← ДОБАВИТЬ
-    get_room_keyboard,     # ← ДОБАВИТЬ (если она существует, иначе создать)
+    get_payment_keyboard,
+    get_room_keyboard,
 )
 
 from services.replicate_api import generate_image
@@ -35,6 +35,7 @@ from utils.texts import (
 
 logger = logging.getLogger(__name__)
 router = Router()
+
 
 async def show_single_menu(sender, state: FSMContext, text: str, keyboard, parse_mode: str = "Markdown"):
     data = await state.get_data()
@@ -61,12 +62,14 @@ async def show_single_menu(sender, state: FSMContext, text: str, keyboard, parse
             pass
     return menu.message_id
 
+
 # ===== ГЛАВНЫЙ МЕНЮ И СТАРТ =====
 @router.callback_query(F.data == "main_menu")
 async def go_to_main_menu(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await show_single_menu(callback.message, state, MAIN_MENU_TEXT, get_main_menu_keyboard())
     await callback.answer()
+
 
 @router.callback_query(F.data == "create_design")
 async def choose_new_photo(callback: CallbackQuery, state: FSMContext):
@@ -75,6 +78,7 @@ async def choose_new_photo(callback: CallbackQuery, state: FSMContext):
     await show_single_menu(callback.message, state, UPLOAD_PHOTO_TEXT, None)
     await callback.answer()
 
+
 # ===== ХЭНДЛЕР ОБРАБОТКИ ФОТО =====
 @router.message(CreationStates.waiting_for_photo, F.photo)
 async def photo_uploaded(message: Message, state: FSMContext, admins: list[int]):
@@ -82,14 +86,18 @@ async def photo_uploaded(message: Message, state: FSMContext, admins: list[int])
     if message.media_group_id:
         data = await state.get_data()
         cached_group_id = data.get('media_group_id')
-        try: await message.delete()
-        except: pass
+        try:
+            await message.delete()
+        except:
+            pass
         if cached_group_id != message.media_group_id:
             await state.update_data(media_group_id=message.media_group_id)
             msg = await message.answer(TOO_MANY_PHOTOS_TEXT)
             await asyncio.sleep(3)
-            try: await msg.delete()
-            except: pass
+            try:
+                await msg.delete()
+            except:
+                pass
         return
     await state.update_data(media_group_id=None)
     photo_file_id = message.photo[-1].file_id
@@ -107,11 +115,13 @@ async def photo_uploaded(message: Message, state: FSMContext, admins: list[int])
     )
     await state.update_data(menu_message_id=menu_msg.message_id)
 
+
 # ===== ВЫБОР КОМНАТЫ =====
 @router.callback_query(CreationStates.choose_room, F.data.startswith("room_"))
 async def room_chosen(callback: CallbackQuery, state: FSMContext, admins: list[int]):
-    # ← ДОБАВЬ ОДНУ СТРОКУ:
-    logger.info(f"✅ HANDLER room_chosen ВЫЗВАН! Callback: {callback.data}, State: {await state.get_state()}")
+    # ✅ ИСПРАВЛЕНО: убрал await из f-string
+    current_state = await state.get_state()
+    logger.info(f"✅ HANDLER room_chosen ВЫЗВАН! Callback: {callback.data}, State: {current_state}")
 
     room = callback.data.split("_")[-1]
     user_id = callback.from_user.id
@@ -123,8 +133,13 @@ async def room_chosen(callback: CallbackQuery, state: FSMContext, admins: list[i
             return
     await state.update_data(room=room)
     await state.set_state(CreationStates.choose_style)
-    await show_single_menu(callback.message, state, CHOOSE_STYLE_TEXT, get_style_keyboard())
+
+    # ✅ ИСПРАВЛЕНО: добавлен показ выбранной комнаты
+    room_name = room.replace('_', ' ').title()
+    text = CHOOSE_STYLE_TEXT.format(room_name=room_name)
+    await show_single_menu(callback.message, state, text, get_style_keyboard())
     await callback.answer()
+
 
 # ===== ВЫБОР СТИЛЯ/ВАРИАНТА И ГЕНЕРАЦИЯ =====
 @router.callback_query(CreationStates.choose_style, F.data == "back_to_room")
@@ -166,7 +181,7 @@ async def style_chosen(callback: CallbackQuery, state: FSMContext, admins: list[
             caption=f"✨ Ваш новый дизайн в стиле *{style.replace('_', ' ').title()}*!",
             parse_mode="Markdown"
         )
-       # сообщение после генерации дизайна
+        # сообщение после генерации дизайна
         menu = await callback.message.answer(
             "Что дальше?",
             reply_markup=get_post_generation_keyboard()
@@ -177,12 +192,19 @@ async def style_chosen(callback: CallbackQuery, state: FSMContext, admins: list[
                                get_main_menu_keyboard())
 
 
-
 @router.callback_query(F.data == "change_style")
 async def change_style_after_gen(callback: CallbackQuery, state: FSMContext):
     await state.set_state(CreationStates.choose_style)
-    await show_single_menu(callback.message, state, CHOOSE_STYLE_TEXT, get_style_keyboard())
+
+    # ✅ ИСПРАВЛЕНО: добавлен показ выбранной комнаты при смене стиля
+    data = await state.get_data()
+    room = data.get('room', 'unknown')
+    room_name = room.replace('_', ' ').title()
+    text = CHOOSE_STYLE_TEXT.format(room_name=room_name)
+
+    await show_single_menu(callback.message, state, text, get_style_keyboard())
     await callback.answer()
+
 
 @router.callback_query(F.data == "show_profile")
 async def show_profile_handler(callback: CallbackQuery, state: FSMContext):
@@ -198,12 +220,14 @@ async def show_profile_handler(callback: CallbackQuery, state: FSMContext):
     await show_single_menu(callback.message, state, text, get_profile_keyboard())
     await callback.answer()
 
+
 @router.message(CreationStates.waiting_for_photo)
 async def invalid_photo(message: Message):
     try:
         await message.delete()
     except:
         pass
+
 
 @router.message(CreationStates.choose_room)
 async def block_messages_in_choose_room(message: Message, state: FSMContext):
@@ -220,12 +244,14 @@ async def block_messages_in_choose_room(message: Message, state: FSMContext):
     except:
         pass
 
+
 @router.message(F.video | F.video_note | F.document | F.sticker | F.audio | F.voice | F.animation)
 async def block_media_types(message: Message):
     try:
         await message.delete()
     except:
         pass
+
 
 @router.message(F.photo)
 async def block_unexpected_photos(message: Message, state: FSMContext):
@@ -239,6 +265,7 @@ async def block_unexpected_photos(message: Message, state: FSMContext):
         await msg.delete()
     except:
         pass
+
 
 @router.message(F.text)
 async def block_all_text_messages(message: Message):

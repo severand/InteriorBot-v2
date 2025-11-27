@@ -16,8 +16,7 @@ from keyboards.inline import (
     get_design_mode_keyboard,  # ← НОВАЯ КЛАВИАТУРА
 )
 from utils.texts import (
-    START_TEXT,
-    MAIN_MENU_TEXT,
+    MAIN_MENU_TEXT,  # ✅ ИЗМЕНЕНО: было START_TEXT, стало MAIN_MENU_TEXT
     PROFILE_TEXT,
     HOME_TEXT,
     BUSINESS_TEXT,
@@ -58,11 +57,11 @@ async def start_command(message: Message, state: FSMContext):
     await state.set_state(MainMenuStates.main_menu)
     logger.info(f"[START] ✅ State установлена: main_menu")
 
-    log_message_send(user_id, START_TEXT, 3)
+    log_message_send(user_id, MAIN_MENU_TEXT, 3)  # ✅ ИЗМЕНЕНО: было START_TEXT
 
     # Отправляем главное меню
     menu = await message.answer(
-        START_TEXT,
+        MAIN_MENU_TEXT,  # ✅ ИЗМЕНЕНО: было START_TEXT, стало MAIN_MENU_TEXT
         reply_markup=get_main_menu_keyboard(),
         parse_mode="Markdown"
     )

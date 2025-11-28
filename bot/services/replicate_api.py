@@ -9,6 +9,18 @@ logger = logging.getLogger(__name__)
 
 # ===== ВЫБОР МОДЕЛИ =====
 # True = DALL-E 3 (Replicate), False = SD 3.5 Large
+# https://replicate.com/openai/dall-e-3
+# новая моделb:
+# interior-design https://replicate.com/adirik/interior-design?prediction=dh7semz89drma0ctrne94ha4y4
+# https://huggingface.co/SG161222/Realistic_Vision_V3.0_VAE/tree/main
+# interior-design-sdxl-lightning - https://replicate.com/rocketdigitalai/interior-design-sdxl-lightning?prediction=dzkrvgvhksrj00ctrn1rhr5mfc
+# interior-design-v2 - https://replicate.com/adirik/interior-design-v2?prediction=4bx2x1463srma0ctrn3abe6484
+# sdxl - https://replicate.com/lucataco/sdxl?prediction=hd0cj5yw01rm80ctrnary3gvvr
+#  stabledesign_interiordesign - https://replicate.com/melgor/stabledesign_interiordesign?prediction=0aqm3rfwmsrmc0ctpy7tq5d3em
+#  interior-design-sdxl - https://replicate.com/rocketdigitalai/interior-design-sdxl?prediction=v1h6crggk9rj00ctpy3rm85eym
+
+
+
 USE_DALLE3_REPLICATE = True  # ← НОВАЯ ВЕРСИЯ!
 
 logger.info(

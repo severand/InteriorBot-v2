@@ -5,11 +5,12 @@ from aiogram.types import InlineKeyboardMarkup
 
 
 # ===== ГЛАВНОЕ МЕНЮ =====
-def get_main_menu_keyboard(is_admin: bool = False) -> InlineKeyboardMarkup:
-    """
-    Главное меню с 3 кнопками на полную ширину.
+"""
+Главное меню с 3 кнопками на полную ширину.
     Если is_admin=True, добавляет кнопку ⚙️ Админ-панель
     """
+def get_main_menu_keyboard(is_admin: bool = True) -> InlineKeyboardMarkup:
+
     builder = InlineKeyboardBuilder()
 
     builder.row(

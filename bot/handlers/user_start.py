@@ -17,7 +17,7 @@ from keyboards.inline import (
 )
 from utils.texts import (
     MAIN_MENU_TEXT,  # ✅ ИЗМЕНЕНО: было START_TEXT, стало MAIN_MENU_TEXT
-    PROFILE_TEXT,
+    PROFILE_WITH_REFERRAL_TEXT,  # ✅ НОВЫЙ ИМПОРТ
     HOME_TEXT,
     BUSINESS_TEXT,
     DESIGN_MODE_TEXT,  # ← НОВЫЙ ТЕКСТ
@@ -31,11 +31,36 @@ from utils.debug import (
     log_message_send,
     log_state_transition,
 )
+from config import config  # ✅ Для BOT_USERNAME
 
 logger = logging.getLogger(__name__)
 router = Router()
 
 logger.info("🔧 [user_start.py] Модуль загружен")
+
+
+# ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====
+
+def format_number(num: int) -> str:
+    """Форматирование числа с пробелами"""
+    return "{:,}".format(num).replace(",", " ")
+
+
+def get_word_form(num: int, word_forms: tuple) -> str:
+    """
+    Получить правильную форму слова
+    word_forms = ("друг", "друга", "друзей")
+    """
+    n = abs(num)
+    n %= 100
+    if n >= 5 and n <= 20:
+        return word_forms[2]
+    n %= 10
+    if n == 1:
+        return word_forms[0]
+    if n >= 2 and n <= 4:
+        return word_forms[1]
+    return word_forms[2]
 
 
 # ===== СТАРТ БОТА =====
@@ -47,8 +72,16 @@ async def start_command(message: Message, state: FSMContext):
 
     logger.info(f"[START] 🎯 Запуск /start для user {user_id}")
 
+    # ✅ ПРОВЕРЯЕМ РЕФЕРАЛЬНЫЙ КОД В /start
+    referrer_code = None
+    if len(message.text.split()) > 1:
+        args = message.text.split()[1]
+        if args.startswith('ref_'):
+            referrer_code = args.replace('ref_', '')
+            logger.info(f"[START] 🔗 Обнаружен реферальный код: {referrer_code}")
+
     # Создаём пользователя если его нет
-    await db.create_user(user_id, message.from_user.username or "Unknown")
+    await db.create_user(user_id, message.from_user.username or "Unknown", referrer_code)
     logger.info(f"[START] ✅ Пользователь создан/проверен")
 
     await state.clear()
@@ -307,11 +340,36 @@ async def profile_callback(callback: CallbackQuery, state: FSMContext):
     balance = await db.get_balance(user_id)
     logger.info(f"[PROFILE] ✅ Баланс: {balance}")
 
-    profile_text = PROFILE_TEXT.format(
-        user_id=user_id,
-        username=username,
+    # ✅ ПОЛУЧАЕМ РЕФЕРАЛЬНУЮ ИНФОРМАЦИЮ
+    user_data = await db.get_user(user_id)
+    referral_code = user_data.get('referral_code', '')
+    referrals_count = user_data.get('referrals_count', 0)
+    
+    # Получаем реферальный баланс (используем COALESCE в запросе)
+    referral_balance = await db.get_referral_balance(user_id)
+    total_earned = user_data.get('referral_total_earned', 0) or 0
+    total_paid = user_data.get('referral_total_paid', 0) or 0
+    
+    # Получаем % комиссии из настроек
+    commission_percent = await db.get_setting("referral_commission_percent") or "10"
+    
+    # Формируем реферальную ссылку
+    bot_username = config.BOT_USERNAME.replace('@', '')  # Убираем @ если есть
+    referral_link = f"t.me/{bot_username}?start=ref_{referral_code}"
+    
+    # Правильное слово "друг/друга/друзей"
+    referrals_word = get_word_form(referrals_count, ("друг", "друга", "друзей"))
+    
+    # Форматируем текст профиля
+    profile_text = PROFILE_WITH_REFERRAL_TEXT.format(
         balance=balance,
-        reg_date="Недавно"
+        referral_link=referral_link,
+        referrals_count=referrals_count,
+        referrals_word=referrals_word,
+        referral_balance=format_number(referral_balance),
+        total_earned=format_number(total_earned),
+        total_paid=format_number(total_paid),
+        commission_percent=commission_percent
     )
 
     menu_message_id = callback.message.message_id
@@ -327,6 +385,15 @@ async def profile_callback(callback: CallbackQuery, state: FSMContext):
 
     await state.update_data(menu_message_id=menu_message_id)
     await log_state(state, "STATE В ПРОФИЛЕ")
+
+
+# ===== SHOW_PROFILE (для возврата из реферальной системы) =====
+@router.callback_query(F.data == "show_profile")
+@debug_handler
+async def show_profile_handler(callback: CallbackQuery, state: FSMContext):
+    """Показать профиль (используется для возврата)"""
+    # Переиспользуем функцию profile_callback
+    await profile_callback(callback, state)
 
 
 # ===== BUY TOKENS =====

@@ -1,12 +1,16 @@
 # bot/database/models.py
 
-# ===== USERS TABLE =====
+# ===== USERS TABLE (РАСШИРЕННАЯ) =====
 CREATE_USERS_TABLE = """
 CREATE TABLE IF NOT EXISTS users (
     user_id INTEGER PRIMARY KEY,
     username TEXT,
     balance INTEGER DEFAULT 3,
-    reg_date DATETIME DEFAULT CURRENT_TIMESTAMP
+    reg_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    referral_code TEXT UNIQUE,
+    referred_by INTEGER,
+    referrals_count INTEGER DEFAULT 0,
+    FOREIGN KEY (referred_by) REFERENCES users (user_id)
 )
 """
 
@@ -15,6 +19,13 @@ CREATE_USER = "INSERT INTO users (user_id, username, balance) VALUES (?, ?, ?)"
 UPDATE_BALANCE = "UPDATE users SET balance = balance + ? WHERE user_id = ?"
 DECREASE_BALANCE = "UPDATE users SET balance = balance - 1 WHERE user_id = ?"
 GET_BALANCE = "SELECT balance FROM users WHERE user_id = ?"
+
+# === РЕФЕРАЛЬНЫЕ ЗАПРОСЫ ===
+GET_USER_BY_REFERRAL_CODE = "SELECT * FROM users WHERE referral_code = ?"
+UPDATE_REFERRAL_CODE = "UPDATE users SET referral_code = ? WHERE user_id = ?"
+UPDATE_REFERRED_BY = "UPDATE users SET referred_by = ? WHERE user_id = ?"
+INCREMENT_REFERRALS_COUNT = "UPDATE users SET referrals_count = referrals_count + 1 WHERE user_id = ?"
+GET_REFERRALS_COUNT = "SELECT referrals_count FROM users WHERE user_id = ?"
 
 # ===== PAYMENTS TABLE =====
 CREATE_PAYMENTS_TABLE = """
@@ -80,3 +91,24 @@ GET_POPULAR_ROOMS = "SELECT room, COUNT(*) as count FROM analytics WHERE action 
 GET_POPULAR_STYLES = "SELECT style, COUNT(*) as count FROM analytics WHERE action = 'generation' GROUP BY style ORDER BY count DESC"
 
 GET_ALL_USERS = "SELECT user_id, username, balance, reg_date FROM users ORDER BY reg_date DESC"
+
+# === НОВАЯ ТАБЛИЦА ДЛЯ НАСТРОЕК СИСТЕМЫ ===
+CREATE_SETTINGS_TABLE = """
+CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+"""
+
+# Значения по умолчанию для настроек
+DEFAULT_SETTINGS = [
+    ("welcome_bonus", "3"),  # Бонус новым пользователям
+    ("referral_bonus_inviter", "2"),  # Бонус тому кто пригласил
+    ("referral_bonus_invited", "2"),  # Бонус приглашённому
+]
+
+# Settings queries
+GET_SETTING = "SELECT value FROM settings WHERE key = ?"
+SET_SETTING = "INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)"
+GET_ALL_SETTINGS = "SELECT * FROM settings"

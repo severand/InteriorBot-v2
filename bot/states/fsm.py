@@ -83,3 +83,56 @@ class OtherStates(StatesGroup):
     Прочие состояния (оставлено для совместимости).
     """
     pass
+
+
+# ===== НОВЫЕ СОСТОЯНИЯ ДЛЯ РЕФЕРАЛЬНОЙ СИСТЕМЫ =====
+
+class ReferralStates(StatesGroup):
+    """
+    Состояния для реферальной системы и выплат.
+    """
+
+    # Ввод суммы для выплаты
+    entering_payout_amount = State()
+
+    # Ввод количества генераций для обмена
+    entering_exchange_amount = State()
+
+    # Ввод реквизитов (номер карты)
+    entering_card_number = State()
+
+    # Ввод реквизитов (YooMoney)
+    entering_yoomoney = State()
+
+    # Ввод реквизитов (номер телефона для СБП)
+    entering_phone = State()
+
+    # Ввод другого способа выплаты
+    entering_other_method = State()
+
+
+class AdminStates(StatesGroup):
+    """
+    Состояния для админ-панели.
+    """
+
+    # Редактирование настроек реферальной программы
+    editing_referral_settings = State()
+
+    # Ввод нового значения для настройки
+    entering_setting_value = State()
+
+    # Создание нового пакета - ввод количества генераций
+    creating_package_tokens = State()
+
+    # Создание нового пакета - ввод цены
+    creating_package_price = State()
+
+    # Редактирование пакета - выбор поля
+    editing_package = State()
+
+    # Редактирование пакета - ввод нового значения
+    editing_package_value = State()
+
+    # Обработка заявки на выплату - ввод примечания
+    processing_payout = State()

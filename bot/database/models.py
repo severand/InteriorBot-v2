@@ -14,6 +14,20 @@ CREATE TABLE IF NOT EXISTS users (
 )
 """
 
+# === НОВЫЕ ПОЛЯ ДЛЯ СТАТИСТИКИ И РЕФЕРАЛЮНОЙ ПРОГРАММЫ ===
+# Выполнять при миграции базы:
+ALTER_USERS_ADD_STATS = """
+ALTER TABLE users ADD COLUMN total_generations INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN successful_payments INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN total_spent INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN referral_balance INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN referral_total_earned INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN referral_total_paid INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN payment_method TEXT;
+ALTER TABLE users ADD COLUMN payment_details TEXT;
+ALTER TABLE users ADD COLUMN sbp_bank TEXT;
+"""
+
 GET_USER = "SELECT * FROM users WHERE user_id = ?"
 CREATE_USER = "INSERT INTO users (user_id, username, balance) VALUES (?, ?, ?)"
 UPDATE_BALANCE = "UPDATE users SET balance = balance + ? WHERE user_id = ?"
@@ -48,7 +62,7 @@ VALUES (?, ?, ?, ?, ?)
 GET_PENDING_PAYMENT = "SELECT * FROM payments WHERE user_id = ? AND status = 'pending' ORDER BY created_at DESC LIMIT 1"
 UPDATE_PAYMENT_STATUS = "UPDATE payments SET status = ? WHERE yookassa_payment_id = ?"
 
-# ===== ANALYTICS TABLE (НОВОЕ) =====
+# ===== ANALYTICS TABLE =====
 CREATE_ANALYTICS_TABLE = """
 CREATE TABLE IF NOT EXISTS analytics (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -63,7 +77,6 @@ CREATE TABLE IF NOT EXISTS analytics (
 )
 """
 
-# Analytics queries
 LOG_ANALYTICS = """
 INSERT INTO analytics (user_id, action, room, style, status, cost)
 VALUES (?, ?, ?, ?, ?, ?)
@@ -92,7 +105,7 @@ GET_POPULAR_STYLES = "SELECT style, COUNT(*) as count FROM analytics WHERE actio
 
 GET_ALL_USERS = "SELECT user_id, username, balance, reg_date FROM users ORDER BY reg_date DESC"
 
-# === НОВАЯ ТАБЛИЦА ДЛЯ НАСТРОЕК СИСТЕМЫ ===
+# ===== SETTINGS TABLE =====
 CREATE_SETTINGS_TABLE = """
 CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
@@ -101,14 +114,142 @@ CREATE TABLE IF NOT EXISTS settings (
 )
 """
 
-# Значения по умолчанию для настроек
 DEFAULT_SETTINGS = [
-    ("welcome_bonus", "3"),  # Бонус новым пользователям
-    ("referral_bonus_inviter", "2"),  # Бонус тому кто пригласил
-    ("referral_bonus_invited", "2"),  # Бонус приглашённому
+    ("welcome_bonus", "3"),
+    ("referral_bonus_inviter", "2"),
+    ("referral_bonus_invited", "2"),
+    ("referral_enabled", "1"),
+    ("referral_commission_percent", "10"),
+    ("referral_min_payout", "500"),
+    ("referral_exchange_rate", "29"),
 ]
 
-# Settings queries
 GET_SETTING = "SELECT value FROM settings WHERE key = ?"
 SET_SETTING = "INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)"
 GET_ALL_SETTINGS = "SELECT * FROM settings"
+
+# ===== PAYMENT PACKAGES TABLE (НОВОЕ) =====
+CREATE_PAYMENT_PACKAGES_TABLE = """
+CREATE TABLE IF NOT EXISTS payment_packages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tokens INTEGER NOT NULL,
+    price INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    is_active INTEGER DEFAULT 1,
+    is_featured INTEGER DEFAULT 0,
+    discount_percent INTEGER DEFAULT 0,
+    sort_order INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+"""
+
+DEFAULT_PACKAGES = [
+    (10, 290, '10 генераций', '', 1, 0, 0, 1),
+    (25, 490, '25 генераций', '', 1, 1, 0, 2),
+    (60, 990, '60 генераций', '', 1, 0, 0, 3),
+]
+
+GET_ACTIVE_PACKAGES = "SELECT * FROM payment_packages WHERE is_active = 1 ORDER BY sort_order"
+GET_PACKAGE_BY_ID = "SELECT * FROM payment_packages WHERE id = ?"
+CREATE_PACKAGE = "INSERT INTO payment_packages (tokens, price, name, description, sort_order) VALUES (?, ?, ?, ?, ?)"
+UPDATE_PACKAGE = "UPDATE payment_packages SET tokens = ?, price = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+TOGGLE_PACKAGE_STATUS = "UPDATE payment_packages SET is_active = NOT is_active WHERE id = ?"
+
+# ===== REFERRAL EARNINGS TABLE (НОВОЕ) =====
+CREATE_REFERRAL_EARNINGS_TABLE = """
+CREATE TABLE IF NOT EXISTS referral_earnings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    referrer_id INTEGER NOT NULL,
+    referred_id INTEGER NOT NULL,
+    payment_id TEXT NOT NULL,
+    amount INTEGER NOT NULL,
+    commission_percent INTEGER NOT NULL,
+    earnings INTEGER NOT NULL,
+    tokens_given INTEGER NOT NULL,
+    status TEXT DEFAULT 'credited',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (referrer_id) REFERENCES users (user_id),
+    FOREIGN KEY (referred_id) REFERENCES users (user_id)
+)
+"""
+
+LOG_REFERRAL_EARNING = """
+INSERT INTO referral_earnings (referrer_id, referred_id, payment_id, amount, commission_percent, earnings, tokens_given)
+VALUES (?, ?, ?, ?, ?, ?, ?)
+"""
+
+GET_USER_REFERRAL_EARNINGS = "SELECT * FROM referral_earnings WHERE referrer_id = ? ORDER BY created_at DESC"
+GET_TOTAL_REFERRAL_STATS = """
+SELECT 
+    COUNT(*) as total_referrals,
+    COALESCE(SUM(earnings), 0) as total_earnings,
+    COALESCE(SUM(tokens_given), 0) as total_tokens
+FROM referral_earnings
+"""
+
+# ===== REFERRAL EXCHANGES TABLE (НОВОЕ) =====
+CREATE_REFERRAL_EXCHANGES_TABLE = """
+CREATE TABLE IF NOT EXISTS referral_exchanges (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    amount INTEGER NOT NULL,
+    tokens INTEGER NOT NULL,
+    exchange_rate INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (user_id)
+)
+"""
+
+LOG_REFERRAL_EXCHANGE = """
+INSERT INTO referral_exchanges (user_id, amount, tokens, exchange_rate)
+VALUES (?, ?, ?, ?)
+"""
+
+GET_USER_EXCHANGES = "SELECT * FROM referral_exchanges WHERE user_id = ? ORDER BY created_at DESC LIMIT 20"
+GET_TOTAL_EXCHANGES_STATS = """
+SELECT 
+    COUNT(*) as count,
+    COALESCE(SUM(amount), 0) as total_amount,
+    COALESCE(SUM(tokens), 0) as total_tokens
+FROM referral_exchanges
+"""
+
+# ===== REFERRAL PAYOUTS TABLE (НОВОЕ) =====
+CREATE_REFERRAL_PAYOUTS_TABLE = """
+CREATE TABLE IF NOT EXISTS referral_payouts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    amount INTEGER NOT NULL,
+    payment_method TEXT,
+    payment_details TEXT,
+    status TEXT DEFAULT 'pending',
+    admin_note TEXT,
+    requested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    processed_at DATETIME,
+    processed_by INTEGER,
+    FOREIGN KEY (user_id) REFERENCES users (user_id)
+)
+"""
+
+CREATE_PAYOUT_REQUEST = """
+INSERT INTO referral_payouts (user_id, amount, payment_method, payment_details)
+VALUES (?, ?, ?, ?)
+"""
+
+GET_PENDING_PAYOUTS = "SELECT * FROM referral_payouts WHERE status = 'pending' ORDER BY requested_at ASC"
+GET_USER_PAYOUTS = "SELECT * FROM referral_payouts WHERE user_id = ? ORDER BY requested_at DESC LIMIT 20"
+UPDATE_PAYOUT_STATUS = """
+UPDATE referral_payouts 
+SET status = ?, processed_at = CURRENT_TIMESTAMP, processed_by = ?, admin_note = ?
+WHERE id = ?
+"""
+
+GET_PAYOUT_STATS = """
+SELECT
+    COUNT(*) as total_payouts,
+    COALESCE(SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END), 0) as total_paid,
+    COALESCE(SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END), 0) as pending_amount
+FROM referral_payouts
+"""

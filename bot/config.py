@@ -14,6 +14,7 @@ ADMIN_IDS = [
 class Config:
     """Configuration class for bot settings"""
     BOT_TOKEN = os.getenv('BOT_TOKEN')
+    BOT_USERNAME = os.getenv('BOT_USERNAME', 'YourBotUsername')  # ✅ НОВОЕ ПОЛЕ
     REPLICATE_API_TOKEN = os.getenv('REPLICATE_API_TOKEN')
     YOOKASSA_SHOP_ID = os.getenv('YOOKASSA_SHOP_ID')
     YOOKASSA_SECRET_KEY = os.getenv('YOOKASSA_SECRET_KEY')

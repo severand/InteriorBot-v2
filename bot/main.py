@@ -1,5 +1,5 @@
 # bot/main.py
-# ✅ БЕЗ ЭМОДЗИ (Windows fix)
+# ✅ БЕЗ ЭМОДЖИ (Windows fix)
 
 import os
 import sys
@@ -22,8 +22,9 @@ from handlers import user_start, payment, admin
 from handlers import creation
 from handlers import design_step1_furniture
 from handlers import design_step2_colors
+from handlers import referral  # ✅ НОВЫЙ ИМПОРТ
 
-# ===== ЛОГИРОВАНИЕ БЕЗ ЭМОДЗИ =====
+# ===== ЛОГИРОВАНИЕ БЕЗ ЭМОДЖИ =====
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -70,6 +71,7 @@ async def main():
             ("admin", admin.router),
             ("design_step1_furniture", design_step1_furniture.router),
             ("design_step2_colors", design_step2_colors.router),
+            ("referral", referral.router),  # ✅ НОВЫЙ ROUTER
         ]
 
         for name, router in routers:

@@ -3,7 +3,9 @@
 
 import logging
 import re
+from datetime import datetime
 from aiogram import Router, F
+from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -22,6 +24,15 @@ logger.info("🔧 [referral.py] Модуль загружен")
 def format_number(num: int) -> str:
     """Форматирование числа с пробелами"""
     return "{:,}".format(num).replace(",", " ")
+
+
+def format_date(date_str: str) -> str:
+    """Форматирование даты в читаемый вид"""
+    try:
+        dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+        return dt.strftime('%d.%m.%Y %H:%M')
+    except:
+        return date_str
 
 
 def validate_phone(phone: str) -> tuple[bool, str]:
@@ -523,6 +534,79 @@ async def process_other_method(message: Message, state: FSMContext):
     
     await message.answer(text, parse_mode="Markdown")
     await state.clear()
+
+
+# ===== ✅ НОВОЕ: ИСТОРИЯ ОПЕРАЦИЙ =====
+
+@router.callback_query(F.data == "referral_history")
+async def show_referral_history(callback: CallbackQuery):
+    """Показать историю операций"""
+    user_id = callback.from_user.id
+    
+    # Получаем все типы операций
+    earnings = await db.get_user_referral_earnings(user_id)
+    exchanges = await db.get_user_exchanges(user_id)
+    payouts = await db.get_user_payouts(user_id)
+    
+    # Формируем текст
+    text = "📊 **ИСТОРИЯ ОПЕРАЦИЙ**\n\n"
+    
+    # ЗАРАБОТКИ
+    if earnings:
+        text += "💰 **Заработки:**\n"
+        for item in earnings[-5:]:  # Последние 5
+            date = format_date(item.get('created_at', ''))
+            earnings_amt = item.get('earnings', 0)
+            tokens = item.get('tokens_given', 0)
+            text += f"• {date}: +{format_number(earnings_amt)} руб. (+{tokens} ген.)\n"
+        text += "\n"
+    else:
+        text += "💰 **Заработки:** Пока нет\n\n"
+    
+    # ОБМЕНЫ
+    if exchanges:
+        text += "💎 **Обмены на генерации:**\n"
+        for item in exchanges[-5:]:  # Последние 5
+            date = format_date(item.get('created_at', ''))
+            amount = item.get('amount', 0)
+            tokens = item.get('tokens', 0)
+            text += f"• {date}: -{format_number(amount)} руб. → +{tokens} ген.\n"
+        text += "\n"
+    else:
+        text += "💎 **Обмены:** Пока нет\n\n"
+    
+    # ВЫПЛАТЫ
+    if payouts:
+        text += "💸 **Заявки на выплату:**\n"
+        for item in payouts[-5:]:  # Последние 5
+            date = format_date(item.get('created_at', ''))
+            amount = item.get('amount', 0)
+            status = item.get('status', 'pending')
+            
+            status_emoji = {
+                'pending': '⏳',
+                'completed': '✅',
+                'rejected': '❌'
+            }.get(status, '⏳')
+            
+            status_text = {
+                'pending': 'Ожидает',
+                'completed': 'Выплачено',
+                'rejected': 'Отклонено'
+            }.get(status, status)
+            
+            text += f"• {date}: {format_number(amount)} руб. {status_emoji} {status_text}\n"
+        text += "\n"
+    else:
+        text += "💸 **Выплаты:** Пока нет\n\n"
+    
+    text += "📄 Показаны последние 5 операций каждого типа."
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="⬅️ Назад в профиль", callback_data="show_profile")]
+    ])
+    
+    await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="Markdown")
 
 
 # ===== ОТМЕНА ВВОДА =====

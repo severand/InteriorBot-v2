@@ -42,6 +42,19 @@ def get_profile_keyboard() -> InlineKeyboardMarkup:
     builder.row(
         InlineKeyboardButton(text="💳 Купить токены", callback_data="buy_generations")
     )
+    
+    # ✅ НОВЫЕ КНОПКИ РЕФЕРАЛЬНОЙ СИСТЕМЫ
+    builder.row(
+        InlineKeyboardButton(text="💸 Вывести деньги", callback_data="referral_request_payout"),
+        InlineKeyboardButton(text="💎 Обменять на генерации", callback_data="referral_exchange_tokens")
+    )
+    builder.row(
+        InlineKeyboardButton(text="⚙️ Реквизиты для выплат", callback_data="referral_setup_payment")
+    )
+    builder.row(
+        InlineKeyboardButton(text="📊 История операций", callback_data="referral_history")
+    )
+    
     builder.row(
         InlineKeyboardButton(text="⬅️ Главное меню", callback_data="main_menu")
     )
@@ -58,17 +71,17 @@ def get_home_rooms_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
 
     rooms = [
-        ("🛋️ Столовая", "room_dining_room"),
+        ("🛍️ Столовая", "room_dining_room"),
         ("🍳 Кухня", "room_kitchen"),
-        ("🛋️ Гостиная", "room_living_room"),
-        ("🛏️ Спальня", "room_bedroom"),
+        ("🛍️ Гостиная", "room_living_room"),
+        ("🛌️ Спальня", "room_bedroom"),
         ("💼 Кабинет для работы", "room_office_work"),
-        ("🪟 Гардеробная", "room_wardrobe_closet"),
+        ("🪠 Гардеробная", "room_wardrobe_closet"),
         ("👶 Детская комната", "room_kids_room"),
         ("🏡 Прихожая", "room_entrance_hall"),
         ("🚽 Санузел", "room_toilet_restroom"),
         ("🛁 Ванная", "room_bathroom_bath"),
-        ("🪟 Балкон", "room_balcony_terrace"),
+        ("🪠 Балкон", "room_balcony_terrace"),
         ("🔳 Мужская берлога", "room_manroom_den"),
     ]
 
@@ -205,7 +218,7 @@ def get_design_mode_keyboard() -> InlineKeyboardMarkup:
     )
     builder.row(
         InlineKeyboardButton(
-            text="🛋️ Создать свой интерьер",
+            text="🛍️ Создать свой интерьер",
             callback_data="mode_create_custom"
         )
     )
@@ -271,10 +284,10 @@ def get_room_keyboard() -> InlineKeyboardMarkup:
     # Здесь нужно определить, показываем "Для дома" или "Для бизнеса"
     # Временное решение - показываем общий список
     rooms = [
-        ("🛋️ Столовая", "room_dining_room"),
+        ("🛍️ Столовая", "room_dining_room"),
         ("🍳 Кухня", "room_kitchen"),
-        ("🛋️ Гостиная", "room_living_room"),
-        ("🛏️ Спальня", "room_bedroom"),
+        ("🛍️ Гостиная", "room_living_room"),
+        ("🛌️ Спальня", "room_bedroom"),
     ]
 
     for i in range(0, len(rooms), 2):
